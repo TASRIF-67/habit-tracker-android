@@ -37,6 +37,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(platform(libs.androidx.compose.bom))

@@ -12,11 +12,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.habittracker.ui.components.AppProgress
 import com.example.habittracker.viewmodel.ProgressState
+import com.example.habittracker.viewmodel.prayerStats
 import java.time.format.TextStyle
 import java.util.Locale
 
 @Composable
 fun ProgressScreen(state: ProgressState) {
+    val prayerStats = state.prayerStats
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(top = 22.dp, bottom = 28.dp)) {
         Text("Progress", style = MaterialTheme.typography.headlineMedium)
         Text("Your consistency this month", color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -25,10 +27,16 @@ fun ProgressScreen(state: ProgressState) {
                 Text(state.month.month.getDisplayName(TextStyle.FULL, Locale.getDefault()), style = MaterialTheme.typography.titleMedium)
                 Row(Modifier.fillMaxWidth().padding(top = 4.dp), verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("${state.percentage}%", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.primary)
-                    Text("${state.completions.size} completions", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
+                    Text("${state.primaryCompletionCount} core completions", color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 8.dp))
                 }
                 AppProgress(state.percentage / 100f, Modifier.padding(top = 10.dp))
                 Text("Across ${state.elapsedDays} days so far", Modifier.padding(top = 10.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Text("Prayer records", Modifier.padding(top = 24.dp, bottom = 8.dp), style = MaterialTheme.typography.titleMedium)
+        Surface(Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) {
+            Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                Stat("Completed", prayerStats.completed); Stat("Jama'ah", prayerStats.jamaah); Stat("Qaza", prayerStats.qaza); Stat("Missed", prayerStats.missed)
             }
         }
         Text("By habit", Modifier.padding(top = 28.dp, bottom = 4.dp), style = MaterialTheme.typography.titleLarge)
@@ -43,3 +51,5 @@ fun ProgressScreen(state: ProgressState) {
         }
     }
 }
+
+@Composable private fun Stat(label: String, value: Int) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text(value.toString(), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary); Text(label, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) } }

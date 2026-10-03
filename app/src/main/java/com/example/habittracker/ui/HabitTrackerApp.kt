@@ -32,16 +32,21 @@ fun HabitTrackerApp(vm: HabitViewModel) {
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
     Scaffold(containerColor = MaterialTheme.colorScheme.background, bottomBar = {
-        NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
-            destinations.forEach { destination ->
-                val selected = route == destination.route
-                NavigationBarItem(selected, onClick = { nav.navigate(destination.route) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } }, icon = { Icon(if (selected) destination.selectedIcon else destination.icon, destination.label) }, label = { Text(destination.label) }, colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer))
+        Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 1.dp) {
+            androidx.compose.foundation.layout.Column {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
+                NavigationBar(containerColor = MaterialTheme.colorScheme.surface, tonalElevation = 0.dp) {
+                    destinations.forEach { destination ->
+                        val selected = route == destination.route
+                        NavigationBarItem(selected, onClick = { nav.navigate(destination.route) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } }, icon = { Icon(if (selected) destination.selectedIcon else destination.icon, destination.label) }, label = { Text(destination.label) }, colors = NavigationBarItemDefaults.colors(selectedIconColor = MaterialTheme.colorScheme.primary, selectedTextColor = MaterialTheme.colorScheme.primary, indicatorColor = MaterialTheme.colorScheme.primaryContainer, unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant, unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant))
+                    }
+                }
             }
         }
     }) { padding ->
         NavHost(nav, "today", Modifier.padding(padding)) {
-            composable("today") { val habits by vm.todayHabits.collectAsStateWithLifecycle(); TodayScreen(habits, vm.today, vm::toggle) }
-            composable("history") { val date by vm.historyDate.collectAsStateWithLifecycle(); val habits by vm.historyHabits.collectAsStateWithLifecycle(); HistoryScreen(date, habits, vm::selectHistoryDate) }
+            composable("today") { val habits by vm.todayHabits.collectAsStateWithLifecycle(); val records by vm.todayPrayerRecords.collectAsStateWithLifecycle(); val reasons by vm.prayerReasons.collectAsStateWithLifecycle(); TodayScreen(habits, records, reasons, vm.today, vm::toggle, vm::recordPrayer, vm::clearPrayer, vm::addPrayerReason) }
+            composable("history") { val date by vm.historyDate.collectAsStateWithLifecycle(); val habits by vm.historyHabits.collectAsStateWithLifecycle(); val records by vm.historyPrayerRecords.collectAsStateWithLifecycle(); HistoryScreen(date, habits, records, vm::selectHistoryDate) }
             composable("progress") { val state by vm.progress.collectAsStateWithLifecycle(); ProgressScreen(state) }
             composable("settings") { val habits by vm.allHabits.collectAsStateWithLifecycle(); val theme by vm.themeMode.collectAsStateWithLifecycle(); SettingsScreen(habits, theme, vm::addHabit, vm::editHabit, vm::setArchived, vm::setTheme) }
         }
