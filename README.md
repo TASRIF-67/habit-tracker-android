@@ -1,331 +1,157 @@
 # HabitTracker
 
-HabitTracker is a local-first native Android application for tracking daily Islamic habits and personal routines. It was built as a native Android learning project using Kotlin and Jetpack Compose, with a deliberately small and understandable architecture.
+HabitTracker is a private, local-first Android routine and daily-life tracker with Islamic habits as first-class features. It combines prayer tracking, flexible personal routines, timed activities, sleep planning, history, and local insights in a calm native Android experience.
 
-**Current version:** 1.0.0
+> Current status: **HabitTracker V2 beta** (`2.0.0-beta.2`)
 
-## Features
+## Highlights
+
+- A time-aware Today experience for prayer, routines, active activities, and sleep
+- Prayer Journey with detailed Salat records and locally calculated prayer times
+- Flexible CHECK, DURATION, and COUNT routines with schedules and time blocks
+- Local reminders, prominent notifications, and alarm-style alerts
+- Foreground timed activity sessions with notification and full-screen controls
+- Bedtime planning and manual sleep-session tracking
+- Calendar-based Journey history and deterministic local Insights
+- First-run onboarding with upgrade-safe handling for existing users
+- Warm light theme, forest-toned dark theme, and adaptive/themed launcher icons
+- Fully local Room and DataStore persistence for core tracking data
+
+## Screens and Core Experience
 
 ### Today
 
-- Daily checklist grouped into Salat, good deeds, and personal habits
-- Dedicated Salat group containing Fajr, Dhuhr, Asr, Maghrib, and Isha
-- Built-in good deeds for Quran, Morning Adhkar, Evening Adhkar, and Sadaqah
-- User-created personal habits alongside the built-in habits
-- Completed-habit count, percentage, and progress indicator
-- Per-section completion count for Salat
-- Subtle color and check-state animations when completion changes
-- Haptic feedback when a habit is toggled
+Today brings the most relevant parts of the day into one screen: daily progress, the next prayer, active and upcoming routines, Prayer Journey, Good Deeds, personal routines, and Tonight. Time-aware presentation helps surface current activity blocks without changing routine completion semantics.
 
-Each completion belongs to the device's current local calendar date. Completing a habit today does not complete it on another day.
+### Routines
 
-### History
+Create and manage personal routines, choose an icon and color theme, configure tracking targets, and optionally add weekday schedules, single times, flexible time blocks, reminders, or alarm-style alerts. Archived routines remain separate while their recorded history is preserved.
 
-History provides a Material 3 date picker for selecting a previous date. The selected day's habits are grouped by category and shown with their completed or incomplete state plus a daily completion summary.
+### Journey
 
-The history screen is read-only. Today and future dates cannot be selected from it, so reviewing past records cannot alter the current day's checklist.
+Journey provides a calendar-based view of past days and detailed daily records for prayers, routines, timed activities, and sleep. It is designed for reviewing local history rather than editing past data.
 
-### Progress
+### Settings
 
-The Progress screen summarizes consistency for the current month:
+Settings contains appearance, prayer-time configuration, sleep planning, notification/alarm guidance, routine management entry points, and application information.
 
-- Overall monthly completion percentage
-- Total habit completions across the elapsed days of the month
-- Per-habit completion percentages
-- Per-habit current streaks
+### Onboarding
 
-Statistics are calculated locally from Room completion records. The streak logic counts consecutive completed dates through today, or through yesterday when the habit has not yet been completed today.
+The six-step first-run flow introduces privacy, prayer-time setup, routines, notifications, and sleep. Existing users upgrading from an earlier version are not incorrectly treated as fresh installations.
 
-### Custom Habits
+## Prayer and Islamic Habits
 
-- Create daily personal habits
-- Rename existing personal habits
-- Archive habits so they leave the active checklist
-- Restore archived habits
-- Preserve stored completion history when a habit is archived
-- Protect built-in Salat and good-deed habits from editing or archiving
+- A connected five-prayer Prayer Journey for Fajr, Dhuhr, Asr, Maghrib, and Isha
+- Prayer records for Completed, In Jama'ah, Qaza, Missed, and unrecorded states
+- Optional reasons for Qaza or missed records
+- Prayer times calculated locally from configured location and calculation settings
+- Per-prayer local reminders
+- Built-in Good Deeds for Quran, Morning Adhkar, Evening Adhkar, and Sadaqah
 
-Custom habit names are validated in the UI and limited to 40 characters. All V1 habits are daily; custom schedules are not implemented.
+Prayer records are presented factually. The app does not assign religious judgment to a user's records.
 
-### Appearance
+## Routines and Activity
 
-HabitTracker includes three appearance modes:
+HabitTracker supports three routine tracking modes:
 
-- System default
-- Light
-- Dark
+| Mode | Purpose |
+| --- | --- |
+| CHECK | Done/not-done routines |
+| DURATION | Minute-based goals and timed activity sessions |
+| COUNT | Quantity goals with optional secondary measurements |
 
-The selected mode is stored with DataStore Preferences and restored after the app restarts. The app uses its own restrained green Material 3 color schemes rather than dynamic device colors.
+Routines can be scheduled on selected weekdays at a single time or across a time block. Reminder offsets and prominent or alarm-style delivery can be configured locally.
 
-## Screens / Navigation
+Duration routines use one authoritative `ActivitySession`. Sessions can be paused, resumed, finished, or discarded from the dedicated Active Session screen. While the app is in the background, an Android foreground service keeps the activity visible and provides direct notification controls. Finishing a session records its eligible duration through the existing routine-progress transaction.
 
-The app has four main destinations:
+## Sleep
 
-1. **Today** — daily checklist and completion summary
-2. **History** — read-only review of a selected past date
-3. **Progress** — current-month completion statistics and streaks
-4. **Settings** — theme selection, personal-habit management, and app information
+Sleep planning supports a usual bedtime, wake-up time, selected weekdays, wind-down timing, and bedtime reminders. Users can manually begin and finish sleep sessions from Tonight, then review completed sessions in Journey and local Insights.
 
-Navigation Compose hosts the destinations, while a Material 3 bottom navigation bar provides labeled icons and preserves destination state when switching screens.
+## Journey and Insights
 
-Screenshots are not included yet because the repository does not currently contain screenshot assets.
+Journey combines calendar history with daily detail. Insights summarize consistency, routine performance, prayer records, activity, and sleep from the data stored on the device.
 
-## Technology Stack
+Insights are deterministic calculations over the user's own local records. They are not AI-generated and are not produced by a cloud analysis service.
 
-- **Kotlin** — application and build-configuration language.
-- **Jetpack Compose** — declarative implementation of the entire application UI.
-- **Material 3** — colors, typography, dialogs, date picker, navigation bar, icons, and other native UI components.
-- **Navigation Compose** — navigation between Today, History, Progress, and Settings.
-- **ViewModel** — owns screen state and launches data-changing operations in `viewModelScope`.
-- **StateFlow and Flow** — expose observable database records and preferences to the UI.
-- **Room** — stores habits and date-specific completion records in a local SQLite database.
-- **DataStore Preferences** — persists the selected System, Light, or Dark appearance mode.
-- **Gradle Kotlin DSL** — configures the Android application and dependency catalog.
-- **KSP** — generates Room database implementation code at build time.
-- **`java.time` API desugaring** — makes the date APIs used by history and statistics available on the minimum supported Android version.
+## Privacy and Local-First Design
+
+- No account is required.
+- No application backend or cloud database is required for core functionality.
+- Core tracking records remain in the local Room database.
+- Preferences and onboarding state are stored locally with DataStore.
+- The application does not request the Android `INTERNET` permission.
+- Location is used only when the user chooses location-based prayer-time setup; configured coordinates remain local to the app.
+
+Opening the developer's LinkedIn profile is delegated to the user's external browser.
+
+## Tech Stack
+
+- Kotlin
+- Jetpack Compose
+- Material 3
+- Navigation Compose
+- ViewModel, StateFlow, and Flow
+- Room with exported migration schemas
+- DataStore Preferences
+- Android foreground services, notifications, alarms, and broadcast receivers
+- KSP
+- Gradle Kotlin DSL and version catalogs
+- Adhan2 for local prayer-time calculation
+- `java.time` API desugaring
 
 ## Architecture
 
-HabitTracker uses manual dependency creation and a small repository-based architecture. `HabitTrackerApplication` creates the Room database, repository, and theme preferences; `MainActivity` supplies them to `HabitViewModel` through a simple factory. No dependency-injection framework is used.
+HabitTracker uses a repository-based architecture with manually constructed dependencies:
 
 ```text
 Compose UI
     ↓
 ViewModel / StateFlow
     ↓
-Repository
+Repositories
     ↓
-Room DAO
-    ↓
-SQLite
-
-DataStore
-    ↓
-Application preferences / theme
+Room / DataStore
 ```
 
-Observed database state flows toward the UI as follows:
-
-```text
-Room DAO Flow
-→ Repository
-→ ViewModel StateFlow
-→ lifecycle-aware Compose collection
-→ UI recomposition
-```
-
-User actions follow the reverse path before producing updated observable state:
-
-```text
-User interaction
-→ Compose
-→ ViewModel
-→ Repository
-→ Room
-→ updated Flow
-→ UI recomposition
-```
-
-Compose collects the ViewModel flows using `collectAsStateWithLifecycle`, so collection respects the Android lifecycle.
-
-## Project Structure
-
-```text
-HabitTracker/
-├── app/
-│   ├── src/main/
-│   │   ├── java/com/example/habittracker/
-│   │   │   ├── data/
-│   │   │   │   ├── local/
-│   │   │   │   │   ├── dao/
-│   │   │   │   │   │   └── HabitDao.kt
-│   │   │   │   │   ├── entity/
-│   │   │   │   │   │   ├── Habit.kt
-│   │   │   │   │   │   └── HabitCompletion.kt
-│   │   │   │   │   ├── HabitConverters.kt
-│   │   │   │   │   └── HabitDatabase.kt
-│   │   │   │   └── repository/
-│   │   │   │       └── HabitRepository.kt
-│   │   │   ├── preferences/
-│   │   │   │   └── ThemePreferences.kt
-│   │   │   ├── ui/
-│   │   │   │   ├── components/
-│   │   │   │   │   └── HabitComponents.kt
-│   │   │   │   ├── screens/
-│   │   │   │   │   ├── today/TodayScreen.kt
-│   │   │   │   │   ├── history/HistoryScreen.kt
-│   │   │   │   │   ├── progress/ProgressScreen.kt
-│   │   │   │   │   └── settings/SettingsScreen.kt
-│   │   │   │   ├── theme/
-│   │   │   │   │   ├── Color.kt
-│   │   │   │   │   ├── Theme.kt
-│   │   │   │   │   └── Type.kt
-│   │   │   │   └── HabitTrackerApp.kt
-│   │   │   ├── viewmodel/
-│   │   │   │   └── HabitViewModel.kt
-│   │   │   ├── HabitTrackerApplication.kt
-│   │   │   └── MainActivity.kt
-│   │   ├── res/
-│   │   └── AndroidManifest.xml
-│   └── build.gradle.kts
-├── gradle/
-│   ├── libs.versions.toml
-│   └── wrapper/
-├── build.gradle.kts
-├── settings.gradle.kts
-├── gradle.properties
-├── gradlew
-├── gradlew.bat
-└── README.md
-```
-
-Major responsibilities:
-
-- `data/local` defines Room entities, converters, queries, and database creation, including first-use default data.
-- `data/repository` gives the ViewModel a small API for observing and changing habits and completions.
-- `preferences` stores and observes the selected theme mode.
-- `viewmodel` combines database and preference flows into UI-ready state and calculates monthly statistics.
-- `ui/screens` contains the four destination composables.
-- `ui/components` contains reusable habit rows, section headers, progress presentation, and habit-icon selection.
-- `ui/theme` defines the intentional light and dark Material 3 design.
-- `HabitTrackerApp.kt` owns the navigation host and bottom navigation bar.
-- `res` contains Android resources, including adaptive and fallback launcher icons.
-- `gradle/libs.versions.toml` centralizes plugin and dependency versions.
-- `gradle/wrapper` allows the project to build with its declared Gradle version without a separate Gradle installation.
-
-## Data Model
-
-Room database version 1 contains two entities.
-
-### `Habit`
-
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `id` | `Long` | Auto-generated primary key. |
-| `name` | `String` | Display name of the habit. |
-| `category` | `HabitCategory` | `SALAT`, `GOOD_DEED`, or `PERSONAL`; stored through a Room type converter. |
-| `active` | `Boolean` | Controls whether the habit appears in the active daily checklist. |
-| `createdAt` | `Long` | Creation timestamp in epoch milliseconds. |
-| `sortOrder` | `Int` | Stable ordering for categories and habits. |
-| `isBuiltIn` | `Boolean` | Protects seeded habits from custom-habit edits and archive operations. |
-
-### `HabitCompletion`
-
-| Field | Type | Purpose |
-| --- | --- | --- |
-| `id` | `Long` | Auto-generated primary key. |
-| `habitId` | `Long` | Foreign key referencing `Habit.id`. |
-| `date` | `String` | Local calendar date stored in ISO-8601 form, such as `2026-09-29`. |
-| `completed` | `Boolean` | Whether that habit is complete for that date. |
-
-`HabitCompletion.habitId` references `Habit.id` with a cascading delete relationship. A unique Room index on `(habitId, date)` prevents multiple completion rows for the same habit on the same date. Toggling a habit on inserts or replaces that date's record; toggling it off removes that record.
-
-This date-specific model means that completing Fajr today has no effect on Fajr tomorrow. Archiving a custom habit changes its `active` flag rather than deleting it, so existing completion rows remain stored.
-
-The database seeds the five Salat and four good-deed habits when the database is first created.
-
-## Local-First / Privacy
-
-- No account is required.
-- There is no application backend.
-- Firebase is not used.
-- There is no cloud database or cloud sync.
-- No analytics SDK is included.
-- Core tracking functionality has no internet dependency.
-- Habit and completion information is stored locally in the Room database on the Android device.
-- The theme preference is stored locally with DataStore.
-- The manifest does not request Android's internet permission. Opening the developer's LinkedIn link delegates the URL to an external browser.
+Local Android services and receivers support active-session notifications, scheduled reminders, alarms, prayer reminders, sleep reminders, and rescheduling after relevant system events. Room flows remain the authoritative source for persisted tracking state.
 
 ## Requirements
 
-- Android Studio with support for the project's Android Gradle Plugin
+- Android 7.0 (API 24) or newer
 - Android SDK 37 for compilation
-- JDK 25, as selected by the repository's Gradle daemon JVM criteria (Android Studio can manage or provision the required runtime)
-- An Android device or emulator running Android 7.0/API 24 or newer
+- A compatible JDK and Android Studio version for the project's Android Gradle Plugin
 
-The repository includes the Gradle Wrapper for Gradle 9.6, so developers normally do not need to install Gradle manually.
+The repository includes its Gradle Wrapper; a separate Gradle installation is normally unnecessary.
 
-## Building From Source
+## Building
 
-1. Clone the repository:
-
-   ```bash
-   git clone https://github.com/TASRIF-67/habit-tracker-android.git
-   cd habit-tracker-android
-   ```
-
-2. Open the cloned directory in Android Studio.
-
-3. Allow Android Studio to install any required SDK components and complete Gradle sync.
-
-4. Build the debug variant.
-
-   Windows PowerShell or Command Prompt:
-
-   ```powershell
-   .\gradlew.bat assembleDebug
-   ```
-
-   macOS or Linux:
-
-   ```bash
-   ./gradlew assembleDebug
-   ```
-
-5. Find the generated debug APK at:
-
-   ```text
-   app/build/outputs/apk/debug/app-debug.apk
-   ```
-
-Debug builds do not require private release-signing credentials.
-
-## Running on an Android Device
-
-1. Enable Developer Options on the Android device.
-2. Enable USB debugging.
-3. Connect the device to the development computer over USB.
-4. Accept the device's debugging authorization prompt.
-5. Select the device in Android Studio.
-6. Run the `app` configuration.
-
-To confirm that Android Debug Bridge can see the device, optionally run:
+Clone the repository:
 
 ```bash
-adb devices
+git clone https://github.com/TASRIF-67/habit-tracker-android.git
+cd habit-tracker-android
 ```
 
-Command-line ADB usage is not required when running the app through Android Studio.
+Build a debug APK on macOS or Linux:
 
-## Release Builds
+```bash
+./gradlew assembleDebug
+```
 
-Public or distribution APKs must be signed with a private Android signing key. Signing keys, passwords, credential property files, and generated release packages must never be committed to the repository.
+On Windows:
 
-This README intentionally does not document private signing paths, aliases, credentials, or local release configuration.
+```powershell
+.\gradlew.bat assembleDebug
+```
 
-## Current V1 Limitations
+The generated debug APK is written under `app/build/outputs/apk/debug/`. Debug builds do not require the private production-signing configuration.
 
-- Every habit is daily; custom recurring schedules are not supported.
-- There are no notifications or reminders.
-- Prayer times are not calculated, downloaded, or displayed.
-- There is no cloud sync, backup, or export.
-- There are no user accounts or authentication.
-- The history screen is read-only and only accepts dates before today.
-- The current-month Progress screen cannot browse statistics for earlier months.
-- Archiving preserves existing completion records, but the V1 schema does not store activation/archive date ranges. Consequently, an archived habit appears on a historical date only when it has a completion record for that date; an archived habit that was missed cannot be reconstructed for that historical checklist.
+## Release Status
 
-## Roadmap
+HabitTracker is currently in V2 beta testing. The repository contains source code and build configuration; it does not currently advertise a public GitHub Release APK.
 
-Potential future improvements may include:
-
-- Optional notifications and reminders
-- Flexible daily or weekly schedules
-- Improved history visualization
-- Home-screen widgets
-- Local backup and export
-- Further accessibility review and improvements
-
-These are possible directions, not promised features.
+Production signing keys, signing properties, passwords, and generated APK/AAB files are intentionally excluded from source control.
 
 ## Developer
 

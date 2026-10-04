@@ -58,5 +58,5 @@ class OptionalGoodDeedsTest {
 
     private fun prayers(completed: Int) = listOf("Fajr", "Dhuhr", "Asr", "Maghrib", "Isha").mapIndexed { index, name -> habit(index.toLong() + 1, name, HabitCategory.SALAT, index < completed) }
     private fun goodDeeds(completed: Int) = listOf("Quran", "Morning Adhkar", "Evening Adhkar", "Sadaqah").mapIndexed { index, name -> habit(index.toLong() + 10, name, HabitCategory.GOOD_DEED, index < completed) }
-    private fun habit(id: Long, name: String, category: HabitCategory, completed: Boolean) = HabitWithStatus(id, name, category, true, 0L, id.toInt(), category != HabitCategory.PERSONAL, completed)
+    private fun habit(id: Long, name: String, category: HabitCategory, completed: Boolean) = HabitWithStatus(id = id, name = name, category = category, active = true, createdAt = 0L, sortOrder = id.toInt(), isBuiltIn = category != HabitCategory.PERSONAL, routineType = com.example.habittracker.data.local.entity.RoutineType.CHECK, target = null, unit = null, value = 0, completed = completed)
 }

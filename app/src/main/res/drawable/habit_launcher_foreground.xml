@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Artwork stays inside the adaptive-icon safe zone; the launcher owns the mask. -->
+    <path
+        android:fillColor="#FFF5D6"
+        android:pathData="M54,40a18,18 0,1 0,0 36a18,18 0,1 0,0 -36" />
+    <path
+        android:fillColor="#8FB47B"
+        android:pathData="M25,72C34,62 43,61 54,70C65,59 75,60 83,69L83,82L25,82Z" />
+    <path
+        android:fillColor="#3F765B"
+        android:pathData="M25,75C36,68 44,69 54,78C65,67 75,68 83,75L83,84L25,84Z" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M27,82L27,49C27,41 32,35 40,32C46,30 51,26 54,21C57,26 62,30 68,32C76,35 81,41 81,49L81,82"
+        android:strokeColor="#FFF0C7"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M40,58L50,68L69,47"
+        android:strokeColor="#075A43"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+</vector>

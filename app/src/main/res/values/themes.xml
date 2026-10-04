@@ -2,4 +2,7 @@
 <resources>
 
     <style name="Theme.HabitTracker" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.HabitTracker.Starting" parent="Theme.HabitTracker">
+        <item name="android:windowBackground">@drawable/splash_screen_legacy</item>
+    </style>
 </resources>

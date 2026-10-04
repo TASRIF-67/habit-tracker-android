@@ -11,6 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.habittracker.ui.components.AppProgress
+import com.example.habittracker.ui.components.routineIcon
+import com.example.habittracker.ui.components.routinePalette
+import com.example.habittracker.data.local.entity.HabitCategory
 import com.example.habittracker.viewmodel.ProgressState
 import com.example.habittracker.viewmodel.prayerStats
 import java.time.format.TextStyle
@@ -43,9 +46,10 @@ fun ProgressScreen(state: ProgressState) {
         if (state.availableHabits.isEmpty()) Text("Your habit statistics will appear here.", Modifier.padding(top = 16.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
         state.availableHabits.forEach { habit ->
             val percent = state.percentageFor(habit); val streak = state.streakFor(habit)
+            val palette = routinePalette(habit.themeKey)
             Column(Modifier.padding(top = 18.dp)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text(habit.name, style = MaterialTheme.typography.titleMedium); Text("$percent%", color = MaterialTheme.colorScheme.primary) }
-                AppProgress(percent / 100f, Modifier.padding(top = 9.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) { Row(verticalAlignment = Alignment.CenterVertically) { if (habit.category == HabitCategory.PERSONAL) { Icon(routineIcon(habit.iconKey), null, Modifier.size(22.dp), tint = palette.icon); Spacer(Modifier.width(8.dp)) }; Text(habit.name, style = MaterialTheme.typography.titleMedium) }; Text("$percent%", color = if (habit.category == HabitCategory.PERSONAL) palette.progress else MaterialTheme.colorScheme.primary) }
+                AppProgress(percent / 100f, Modifier.padding(top = 9.dp), if (habit.category == HabitCategory.PERSONAL) palette.progress else MaterialTheme.colorScheme.primary)
                 Row(Modifier.padding(top = 7.dp), verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Outlined.LocalFireDepartment, null, Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant); Spacer(Modifier.width(5.dp)); Text(if (streak == 1) "1 day current streak" else "$streak day current streak", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }

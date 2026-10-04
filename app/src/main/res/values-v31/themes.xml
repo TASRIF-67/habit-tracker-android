@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.HabitTracker.Starting" parent="Theme.HabitTracker">
+        <item name="android:windowSplashScreenBackground">@color/launcher_icon_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/habit_launcher</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/launcher_icon_background</item>
+    </style>
+</resources>

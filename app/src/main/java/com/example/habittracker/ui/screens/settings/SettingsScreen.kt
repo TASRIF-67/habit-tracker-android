@@ -1,6 +1,7 @@
 package com.example.habittracker.ui.screens.settings
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.OpenInNew
@@ -12,18 +13,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import android.app.AlarmManager
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import com.example.habittracker.data.local.entity.Habit
+import com.example.habittracker.data.local.entity.RoutineType
+import com.example.habittracker.data.RoutineDraft
+import com.example.habittracker.data.RoutineRules
+import com.example.habittracker.ui.components.RoutineEditorDialog
+import com.example.habittracker.ui.components.routineIcon
+import com.example.habittracker.ui.components.routinePalette
 import com.example.habittracker.preferences.ThemeMode
+import com.example.habittracker.data.SleepRules
+import com.example.habittracker.data.local.entity.SleepPlan
+import com.example.habittracker.data.local.entity.PrayerTimeSettings
 
 @Composable
-fun SettingsScreen(habits: List<Habit>, theme: ThemeMode, onAdd: (String) -> Unit, onEdit: (Habit, String) -> Unit, onArchive: (Habit, Boolean) -> Unit, onTheme: (ThemeMode) -> Unit) {
-    var editing by remember { mutableStateOf<Habit?>(null) }
-    var adding by remember { mutableStateOf(false) }
-    var archiving by remember { mutableStateOf<Habit?>(null) }
-    val custom = habits.filter { !it.isBuiltIn }
+fun SettingsScreen(theme: ThemeMode, sleepPlan: SleepPlan?, prayerTimes: PrayerTimeSettings?, onTheme: (ThemeMode) -> Unit, onSleepSettings: () -> Unit, onPrayerTimeSettings: () -> Unit) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val versionName = remember(context) {
@@ -38,17 +52,39 @@ fun SettingsScreen(habits: List<Habit>, theme: ThemeMode, onAdd: (String) -> Uni
                 RadioButton(theme == mode, { onTheme(mode) }); Text(mode.label, Modifier.weight(1f)); Text(mode.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        item { HorizontalDivider(Modifier.padding(top = 18.dp)); Row(Modifier.fillMaxWidth().padding(top = 18.dp), verticalAlignment = Alignment.CenterVertically) { SettingsHeader("Personal habits", Icons.Outlined.Checklist, Modifier.weight(1f)); FilledTonalButton(onClick = { adding = true }) { Icon(Icons.Outlined.Add, null); Spacer(Modifier.width(6.dp)); Text("Add") } } }
-        if (custom.isEmpty()) item { Surface(Modifier.fillMaxWidth().padding(top = 12.dp), color = MaterialTheme.colorScheme.surfaceVariant, shape = MaterialTheme.shapes.medium) { Text("No personal habits yet. Add one to include it in your daily checklist.", Modifier.padding(18.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) } }
-        items(custom.size, key = { custom[it].id }) { index ->
-            val habit = custom[index]
-            ListItem(headlineContent = { Text(habit.name) }, supportingContent = { Text(if (habit.active) "Active" else "Archived") }, leadingContent = { Icon(if (habit.active) Icons.Outlined.CheckCircle else Icons.Outlined.Inventory2, null) }, trailingContent = {
-                Row { IconButton(onClick = { editing = habit }) { Icon(Icons.Outlined.Edit, "Rename ${habit.name}") }; IconButton(onClick = { if (habit.active) archiving = habit else onArchive(habit, false) }) { Icon(if (habit.active) Icons.Outlined.Archive else Icons.Outlined.Unarchive, if (habit.active) "Archive ${habit.name}" else "Restore ${habit.name}") } }
-            }, colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background))
-            if (index < custom.lastIndex) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .55f))
+        item {
+            SettingsHeader("Notifications", Icons.Outlined.Notifications)
+            val allowed = Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+            ListItem(headlineContent = { Text("Routine reminders") }, supportingContent = { Text(if (allowed) "Allowed" else "Not allowed") }, leadingContent = { Icon(if (allowed) Icons.Outlined.NotificationsActive else Icons.Outlined.NotificationsOff, null) }, trailingContent = { if (!allowed) TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:${context.packageName}"))) }) { Text("Settings") } }, colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background))
+            val exactAllowed = Build.VERSION.SDK_INT < 31 || context.getSystemService(AlarmManager::class.java).canScheduleExactAlarms()
+            ListItem(headlineContent = { Text("Alarm capability") }, supportingContent = { Text(if (exactAllowed) "Precise alarms available" else "Using inexact alarm fallback") }, leadingContent = { Icon(Icons.Outlined.Alarm, null) }, trailingContent = { if (!exactAllowed) TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:${context.packageName}"))) }) { Text("Allow") } }, colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background))
+            TextButton(onClick = { context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)) }) { Text("Manage Android notification settings") }
         }
         item {
-            Text("Built-in Salat and good-deed habits are protected and cannot be archived.", Modifier.padding(top = 22.dp), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            SettingsHeader("Prayer", Icons.Outlined.Mosque)
+            ListItem(
+                headlineContent = { Text("Prayer times & reminders") },
+                supportingContent = { Text(prayerTimes?.locationLabel ?: "Set location and calculation method") },
+                leadingContent = { Icon(Icons.Outlined.Schedule, null) },
+                trailingContent = { Icon(Icons.Outlined.ChevronRight, "Open prayer time settings") },
+                modifier = Modifier.clickable(onClick = onPrayerTimeSettings),
+                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        }
+        item {
+            SettingsHeader("Sleep", Icons.Outlined.Bedtime)
+            ListItem(
+                headlineContent = { Text("Sleep & bedtime") },
+                supportingContent = {
+                    Text(if (sleepPlan?.enabled == true) "${SleepRules.formatMinutes(sleepPlan.bedtimeMinutes)} → ${SleepRules.formatMinutes(sleepPlan.wakeTimeMinutes)}${if (sleepPlan.windDownEnabled) " · Wind-down ${sleepPlan.windDownOffsetMinutes} min before" else ""}" else "Set up sleep & bedtime")
+                },
+                leadingContent = { Icon(Icons.Outlined.Bedtime, null) },
+                trailingContent = { Icon(Icons.Outlined.ChevronRight, "Open sleep settings") },
+                modifier = Modifier.clickable(onClick = onSleepSettings),
+                colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background),
+            )
+        }
+        item {
             HorizontalDivider(Modifier.padding(top = 24.dp))
             SettingsHeader("About", Icons.Outlined.Info)
             ListItem(
@@ -73,9 +109,6 @@ fun SettingsScreen(habits: List<Habit>, theme: ThemeMode, onAdd: (String) -> Uni
             )
         }
     }
-    if (adding) NameDialog("Create habit", "", "Create", { adding = false }) { onAdd(it); adding = false }
-    editing?.let { habit -> NameDialog("Rename habit", habit.name, "Save", { editing = null }) { onEdit(habit, it); editing = null } }
-    archiving?.let { habit -> AlertDialog(onDismissRequest = { archiving = null }, icon = { Icon(Icons.Outlined.Archive, null) }, title = { Text("Archive ${habit.name}?") }, text = { Text("It will leave today’s checklist. Its completion history will be preserved.") }, confirmButton = { TextButton(onClick = { onArchive(habit, true); archiving = null }) { Text("Archive") } }, dismissButton = { TextButton(onClick = { archiving = null }) { Text("Cancel") } }) }
 }
 
 private const val LINKED_IN_URL = "https://www.linkedin.com/in/imam-hasan-tasrif-38501b274/"
@@ -83,10 +116,3 @@ private const val LINKED_IN_URL = "https://www.linkedin.com/in/imam-hasan-tasrif
 @Composable private fun SettingsHeader(text: String, icon: androidx.compose.ui.graphics.vector.ImageVector, modifier: Modifier = Modifier) { Row(modifier.padding(top = 26.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) { Icon(icon, null, tint = MaterialTheme.colorScheme.primary); Spacer(Modifier.width(10.dp)); Text(text, style = MaterialTheme.typography.titleLarge) } }
 private val ThemeMode.label get() = name.lowercase().replaceFirstChar { it.uppercase() }
 private val ThemeMode.description get() = when (this) { ThemeMode.SYSTEM -> "Follow device"; ThemeMode.LIGHT -> "Always light"; ThemeMode.DARK -> "Always dark" }
-
-@Composable
-private fun NameDialog(title: String, initial: String, action: String, onDismiss: () -> Unit, onSave: (String) -> Unit) {
-    var name by remember(initial) { mutableStateOf(initial) }
-    val valid = name.trim().isNotEmpty() && name.trim().length <= 40
-    AlertDialog(onDismissRequest = onDismiss, title = { Text(title) }, text = { OutlinedTextField(name, { if (it.length <= 40) name = it }, label = { Text("Habit name") }, supportingText = { Text("${name.length}/40") }, isError = name.isNotEmpty() && !valid, singleLine = true, keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done), keyboardActions = KeyboardActions(onDone = { if (valid) onSave(name.trim()) })) }, confirmButton = { TextButton(onClick = { onSave(name.trim()) }, enabled = valid) { Text(action) } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } })
-}
