@@ -37,9 +37,22 @@ fun SleepSettingsScreen(plan: SleepPlan?, onBack: () -> Unit, onSave: (SleepPlan
     val context = LocalContext.current
     val notificationsAllowed = Build.VERSION.SDK_INT < 33 || context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    Column(Modifier.fillMaxSize()) {
-        TopAppBar(title = { Text("Sleep & bedtime") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") } })
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = { TopAppBar(title = { Text("Sleep & bedtime", color = MaterialTheme.colorScheme.onSurface) }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, "Back") } }, colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)) },
+        bottomBar = {
+            Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp) {
+                Column(Modifier.navigationBarsPadding().imePadding()) {
+                    Button(
+                        onClick = { onSave(draft) { result -> result.onSuccess { onBack() }.onFailure { error = it.message } } },
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp).heightIn(min = 52.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary),
+                    ) { Text("Save sleep plan") }
+                }
+            }
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding).verticalScroll(rememberScrollState()).padding(horizontal = 20.dp, vertical = 12.dp)) {
             SettingSwitch("Enable sleep plan", draft.enabled) { draft = draft.copy(enabled = it); error = null }
             HorizontalDivider(Modifier.padding(vertical = 12.dp))
             TimeSetting("Bedtime", SleepRules.formatMinutes(draft.bedtimeMinutes)) { timeField = "bedtime" }
@@ -53,6 +66,7 @@ fun SleepSettingsScreen(plan: SleepPlan?, onBack: () -> Unit, onSave: (SleepPlan
                         onClick = { val bit = ScheduleRules.dayBit(day); val updated = if (selected) draft.daysMask and bit.inv() else draft.daysMask or bit; if (updated != 0) draft = draft.copy(daysMask = updated) },
                         label = { Text(day.name.take(1)) },
                         modifier = Modifier.semantics { this.selected = selected },
+                        colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface, labelColor = MaterialTheme.colorScheme.onSurface, selectedContainerColor = MaterialTheme.colorScheme.primaryContainer, selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer),
                     )
                 }
             }
@@ -63,7 +77,7 @@ fun SleepSettingsScreen(plan: SleepPlan?, onBack: () -> Unit, onSave: (SleepPlan
             if (draft.windDownEnabled) {
                 Text("Remind me before bedtime", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    SleepRules.windDownOffsets.forEach { offset -> FilterChip(selected = draft.windDownOffsetMinutes == offset, onClick = { draft = draft.copy(windDownOffsetMinutes = offset) }, label = { Text(if (offset == 60) "1 hour" else "$offset min") }) }
+                    SleepRules.windDownOffsets.forEach { offset -> FilterChip(selected = draft.windDownOffsetMinutes == offset, onClick = { draft = draft.copy(windDownOffsetMinutes = offset) }, label = { Text(if (offset == 60) "1 hour" else "$offset min") }, colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surface, labelColor = MaterialTheme.colorScheme.onSurface, selectedContainerColor = MaterialTheme.colorScheme.primaryContainer, selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer)) }
                 }
             }
             SettingSwitch("Bedtime reminder", draft.bedtimeReminderEnabled) { draft = draft.copy(bedtimeReminderEnabled = it); error = null }
@@ -84,7 +98,7 @@ fun SleepSettingsScreen(plan: SleepPlan?, onBack: () -> Unit, onSave: (SleepPlan
                 }
             }
             error?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 12.dp)) }
-            Button(onClick = { onSave(draft) { result -> result.onSuccess { onBack() }.onFailure { error = it.message } } }, modifier = Modifier.fillMaxWidth().padding(vertical = 20.dp).heightIn(min = 48.dp)) { Text("Save sleep plan") }
+            Spacer(Modifier.height(12.dp))
         }
     }
 
@@ -96,9 +110,9 @@ fun SleepSettingsScreen(plan: SleepPlan?, onBack: () -> Unit, onSave: (SleepPlan
 }
 
 @Composable private fun SettingSwitch(label: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Switch) { onChecked(!checked) }, verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium); Switch(checked, onChecked) }
+    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).clickable(role = Role.Switch) { onChecked(!checked) }, verticalAlignment = Alignment.CenterVertically) { Text(label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface); Switch(checked, onChecked, colors = SwitchDefaults.colors(checkedThumbColor = MaterialTheme.colorScheme.onPrimary, checkedTrackColor = MaterialTheme.colorScheme.primary, uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant, uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant, uncheckedBorderColor = MaterialTheme.colorScheme.outline)) }
 }
 
 @Composable private fun TimeSetting(label: String, value: String, onClick: () -> Unit) {
-    ListItem(headlineContent = { Text(label) }, trailingContent = { Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary) }, modifier = Modifier.clickable(onClick = onClick), colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background))
+    ListItem(headlineContent = { Text(label, color = MaterialTheme.colorScheme.onSurface) }, trailingContent = { Text(value, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary) }, modifier = Modifier.clickable(onClick = onClick), colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.background))
 }

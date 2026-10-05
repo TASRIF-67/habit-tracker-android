@@ -3,6 +3,7 @@ package com.example.habittracker.ui.components
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -566,7 +567,7 @@ fun ScheduledActiveNowSection(block: com.example.habittracker.data.ActiveRoutine
 }
 
 @Composable
-fun ActiveNowSection(habit: HabitWithStatus, session: ActivitySession, onOpen: () -> Unit) {
+fun ActiveNowSection(habit: HabitWithStatus, session: ActivitySession, onPause: () -> Unit, onResume: () -> Unit, onOpen: () -> Unit, onDiscard: () -> Unit) {
     val palette = routinePalette(habit.themeKey)
     var now by remember(session.id, session.status, session.resumedAt) { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(session.id, session.status, session.resumedAt) { while (session.status == ActivitySessionStatus.RUNNING) { delay(1_000); now = System.currentTimeMillis() } }
@@ -578,10 +579,14 @@ fun ActiveNowSection(habit: HabitWithStatus, session: ActivitySession, onOpen: (
         Surface(Modifier.fillMaxWidth().semantics { contentDescription = "Active now, ${habit.name}, ${if (session.status == ActivitySessionStatus.PAUSED) "paused" else "running"}, ${formatActivityElapsed(elapsed)} elapsed" }, color = palette.container, border = androidx.compose.foundation.BorderStroke(1.dp, palette.border), shape = MaterialTheme.shapes.large) {
             Column(Modifier.padding(AppSpacing.large)) {
                 Row(verticalAlignment = Alignment.CenterVertically) { Icon(routineIcon(habit.iconKey), null, tint = palette.icon); Text(habit.name, Modifier.weight(1f).padding(start = AppSpacing.medium), style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis); Spacer(Modifier.width(AppSpacing.small)); Text(formatActivityElapsed(elapsed), style = MaterialTheme.typography.titleLarge, color = palette.icon) }
-                if (session.status == ActivitySessionStatus.PAUSED) Text("Paused", Modifier.padding(top = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (session.status == ActivitySessionStatus.PAUSED) "Paused" else "Running", Modifier.padding(top = 4.dp), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text("$displayedProgress / ${habit.target ?: 0} min", Modifier.padding(top = AppSpacing.medium), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 AppProgress(displayedProgress.toFloat() / (habit.target ?: 1), Modifier.padding(top = AppSpacing.small), palette.progress)
-                FilledTonalButton(onClick = onOpen, modifier = Modifier.align(Alignment.End).padding(top = AppSpacing.medium).heightIn(min = 48.dp)) { Text("Open session") }
+                Row(Modifier.fillMaxWidth().padding(top = AppSpacing.medium).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Button(onClick = if (session.status == ActivitySessionStatus.RUNNING) onPause else onResume, modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)) { Text(if (session.status == ActivitySessionStatus.RUNNING) "Pause" else "Resume", maxLines = 2, textAlign = TextAlign.Center) }
+                    OutlinedButton(onClick = onOpen, modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp)) { Text("Open session", maxLines = 2, textAlign = TextAlign.Center) }
+                    OutlinedButton(onClick = onDiscard, modifier = Modifier.weight(1f).fillMaxHeight().heightIn(min = 48.dp), contentPadding = PaddingValues(horizontal = 4.dp, vertical = 8.dp), border = BorderStroke(1.dp, MaterialTheme.colorScheme.error), colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Discard", maxLines = 2, textAlign = TextAlign.Center) }
+                }
             }
         }
     }

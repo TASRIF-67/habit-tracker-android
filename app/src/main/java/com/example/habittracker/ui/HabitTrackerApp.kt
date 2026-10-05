@@ -9,18 +9,21 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.*
 import com.example.habittracker.ui.screens.journey.JourneyScreen
@@ -54,6 +57,7 @@ fun HabitTrackerApp(vm: HabitViewModel, sleepVm: SleepViewModel, prayerTimeVm: P
     )
     val entry by nav.currentBackStackEntryAsState()
     val route = entry?.destination?.route
+    var todayUsesDarkStatusContent by rememberSaveable { mutableStateOf(false) }
     fun openActiveSession() { nav.navigate("active_session") { launchSingleTop = true } }
     LaunchedEffect(activeSessionRequest, activeSessionLoaded, rootActiveSession?.id) {
         when (ActiveSessionNavigationRules.notificationRequest(activeSessionRequest, handledActiveSessionRequest, activeSessionLoaded, rootActiveSession != null)) {
@@ -64,7 +68,21 @@ fun HabitTrackerApp(vm: HabitViewModel, sleepVm: SleepViewModel, prayerTimeVm: P
     }
     val view = LocalView.current
     val lightPage = MaterialTheme.colorScheme.background.luminance() > .5f
-    SideEffect { view.context.findActivity()?.window?.let { WindowCompat.getInsetsController(it, view).isAppearanceLightStatusBars = route != "today" && lightPage } }
+    val useDarkStatusContent = if (route == "today") todayUsesDarkStatusContent else lightPage
+    DisposableEffect(entry, useDarkStatusContent, view) {
+        fun applyStatusBarAppearance() {
+            view.context.findActivity()?.window?.let {
+                WindowCompat.getInsetsController(it, view).apply {
+                    isAppearanceLightStatusBars = useDarkStatusContent
+                    isAppearanceLightNavigationBars = lightPage
+                }
+            }
+        }
+        applyStatusBarAppearance()
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_START || event == Lifecycle.Event.ON_RESUME) applyStatusBarAppearance() }
+        entry?.lifecycle?.addObserver(observer)
+        onDispose { entry?.lifecycle?.removeObserver(observer) }
+    }
     Scaffold(containerColor = MaterialTheme.colorScheme.background, contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal), bottomBar = { if (route !in setOf("sleep_settings", "prayer_time_settings", "active_session") && route?.startsWith("journey_day/") != true) {
         Column {
             Surface(Modifier.padding(horizontal = 8.dp, vertical = 2.dp), color = MaterialTheme.colorScheme.surface, tonalElevation = 2.dp, shadowElevation = 2.dp, shape = MaterialTheme.shapes.extraLarge) {
@@ -79,7 +97,7 @@ fun HabitTrackerApp(vm: HabitViewModel, sleepVm: SleepViewModel, prayerTimeVm: P
         } }
     }) { padding ->
         NavHost(nav, "today", Modifier.padding(padding)) {
-            composable("today") { val habits by vm.todayHabits.collectAsStateWithLifecycle(); val schedules by vm.schedules.collectAsStateWithLifecycle(); val activeSession by vm.activeSession.collectAsStateWithLifecycle(); val sleepPlan by sleepVm.plan.collectAsStateWithLifecycle(); val activeSleep by sleepVm.activeSession.collectAsStateWithLifecycle(); val latestSleep by sleepVm.latestCompleted.collectAsStateWithLifecycle(); val records by vm.todayPrayerRecords.collectAsStateWithLifecycle(); val reasons by vm.prayerReasons.collectAsStateWithLifecycle(); val prayerTimes by prayerTimeVm.settings.collectAsStateWithLifecycle(); TodayScreen(habits, schedules, activeSession, sleepPlan, activeSleep, latestSleep, records, reasons, prayerTimes, vm.today, vm::toggle, vm::recordPrayer, vm::clearPrayer, vm::addPrayerReason, vm::addRoutineProgress, vm::startSession, { openActiveSession() }, sleepVm::startSleep, sleepVm::finishSleep, { nav.navigate("sleep_settings") }, { nav.navigate("prayer_time_settings") }, { sleepPlan?.let { sleepVm.savePlan(it.copy(enabled = true)) } }) }
+            composable("today") { val habits by vm.todayHabits.collectAsStateWithLifecycle(); val schedules by vm.schedules.collectAsStateWithLifecycle(); val activeSession by vm.activeSession.collectAsStateWithLifecycle(); val sleepPlan by sleepVm.plan.collectAsStateWithLifecycle(); val activeSleep by sleepVm.activeSession.collectAsStateWithLifecycle(); val latestSleep by sleepVm.latestCompleted.collectAsStateWithLifecycle(); val records by vm.todayPrayerRecords.collectAsStateWithLifecycle(); val reasons by vm.prayerReasons.collectAsStateWithLifecycle(); val prayerTimes by prayerTimeVm.settings.collectAsStateWithLifecycle(); TodayScreen(habits, schedules, activeSession, sleepPlan, activeSleep, latestSleep, records, reasons, prayerTimes, vm.today, vm::toggle, vm::recordPrayer, vm::clearPrayer, vm::addPrayerReason, vm::addRoutineProgress, vm::startSession, vm::pauseSession, vm::resumeSession, vm::discardSession, { openActiveSession() }, sleepVm::startSleep, sleepVm::finishSleep, { nav.navigate("sleep_settings") }, { nav.navigate("prayer_time_settings") }, { sleepPlan?.let { sleepVm.savePlan(it.copy(enabled = true)) } }, { todayUsesDarkStatusContent = it }) }
             composable("routines") { Box(Modifier.statusBarsPadding()) { val habits by vm.allHabits.collectAsStateWithLifecycle(); val todayHabits by vm.todayHabits.collectAsStateWithLifecycle(); val schedules by vm.schedules.collectAsStateWithLifecycle(); val activeSession by vm.activeSession.collectAsStateWithLifecycle(); RoutinesScreen(habits, todayHabits, schedules, activeSession, vm::addHabit, vm::editHabit, vm::setArchived, vm::toggle, vm::addRoutineProgress, vm::startSession) { openActiveSession() } } }
             composable("active_session") {
                 val session by vm.activeSession.collectAsStateWithLifecycle()

@@ -1,6 +1,5 @@
 package com.example.habittracker.ui.screens.today
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -8,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -48,12 +46,16 @@ fun TodayScreen(
     onAddReason: (String, (Result<Long>) -> Unit) -> Unit,
     onAddRoutineProgress: (HabitWithStatus, Int, (RoutineProgressUpdate) -> Unit) -> Unit,
     onStartSession: (Long, (StartSessionResult) -> Unit) -> Unit,
+    onPauseSession: () -> Unit,
+    onResumeSession: () -> Unit,
+    onDiscardSession: () -> Unit,
     onOpenActiveSession: () -> Unit,
     onStartSleep: ((StartSleepResult) -> Unit) -> Unit,
     onFinishSleep: (Boolean, (FinishSleepResult) -> Unit) -> Unit,
     onOpenSleepSettings: () -> Unit,
     onOpenPrayerTimeSettings: () -> Unit,
     onResumeSleepPlan: () -> Unit,
+    onStatusBarContrastChange: (useDarkContent: Boolean) -> Unit,
 ) {
     val haptics = LocalHapticFeedback.current
     val timeState = rememberTimeOfDayVisualState()
@@ -97,6 +99,7 @@ fun TodayScreen(
     var previousGoodDeedCount by remember { mutableIntStateOf(0) }
     var celebratingDailyProgress by remember { mutableStateOf(false) }
     var conflictingSession by remember { mutableStateOf<ActivitySession?>(null) }
+    var confirmDiscardSession by remember { mutableStateOf(false) }
 
     fun start(habit: HabitWithStatus) { onStartSession(habit.id) { result -> when {
         result is StartSessionResult.Started -> onOpenActiveSession()
@@ -139,6 +142,16 @@ fun TodayScreen(
     }
 
     val scrollState = rememberScrollState()
+    var statusBarScrolled by remember { mutableStateOf(scrollState.value > 120) }
+    LaunchedEffect(scrollState) {
+        snapshotFlow { scrollState.value }.collect { offset ->
+            val next = if (statusBarScrolled) offset > 88 else offset > 128
+            if (next != statusBarScrolled) statusBarScrolled = next
+        }
+    }
+    val lightHeroScene = timeState == com.example.habittracker.data.TimeOfDayVisualState.MORNING || timeState == com.example.habittracker.data.TimeOfDayVisualState.DAY || timeState == com.example.habittracker.data.TimeOfDayVisualState.AFTERNOON || timeState == com.example.habittracker.data.TimeOfDayVisualState.SUNSET
+    val useDarkStatusContent = lightHeroScene && !statusBarScrolled
+    LaunchedEffect(useDarkStatusContent) { onStatusBarContrastChange(useDarkStatusContent) }
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize().verticalScroll(scrollState).padding(bottom = AppSpacing.xxLarge)) {
             TimeOfDayHero(date, timeState)
@@ -148,7 +161,7 @@ fun TodayScreen(
                 if (prayerTimeSettings == null) PrayerTimesSetupCard(onOpenPrayerTimeSettings)
                 else NextPrayerCard(prayerTimeSettings, onOpenPrayerTimeSettings)
             }
-            if (activeSession != null && activeHabit != null) ActiveNowSection(activeHabit, activeSession, onOpenActiveSession)
+            if (activeSession != null && activeHabit != null) ActiveNowSection(activeHabit, activeSession, onPauseSession, onResumeSession, onOpenActiveSession) { confirmDiscardSession = true }
             else currentBlock?.let { block -> ScheduledActiveNowSection(block, { start(block.habit) }, { onToggle(block.habit) }, { onAddRoutineProgress(block.habit, 1) {} }) }
             upNext?.let { UpNextRoutine(it.habit, it.schedule, it.occurrence, now) { start(it.habit) } }
             if (prayerItems.isNotEmpty()) {
@@ -179,11 +192,10 @@ fun TodayScreen(
             )
             }
         }
-        val statusScrimAlpha by animateFloatAsState(if (scrollState.value > 120) .96f else 0f, label = "status bar scroll scrim")
         Box(
             Modifier.fillMaxWidth()
                 .windowInsetsTopHeight(WindowInsets.statusBars)
-                .background(Brush.verticalGradient(listOf(Color(0xFF071A17).copy(alpha = statusScrimAlpha), Color.Transparent)))
+                .background(if (statusBarScrolled) Color(0xFF071A17) else Color.Transparent)
         )
     }
 
@@ -202,6 +214,7 @@ fun TodayScreen(
         loggingDuration = null
     } }
     conflictingSession?.let { session -> val name = habits.firstOrNull { it.id == session.habitId }?.name ?: "Another routine"; AlertDialog(onDismissRequest = { conflictingSession = null }, title = { Text("$name is currently active") }, text = { Text("Open the active session before starting another routine.") }, confirmButton = { TextButton(onClick = { conflictingSession = null; onOpenActiveSession() }) { Text("Open session") } }, dismissButton = { TextButton(onClick = { conflictingSession = null }) { Text("Cancel") } }) }
+    if (confirmDiscardSession) AlertDialog(onDismissRequest = { confirmDiscardSession = false }, title = { Text("Discard session?") }, text = { Text("Elapsed time will not be added to your progress.") }, confirmButton = { TextButton(onClick = { confirmDiscardSession = false; onDiscardSession() }, colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text("Discard") } }, dismissButton = { TextButton(onClick = { confirmDiscardSession = false }) { Text("Cancel") } })
     sleepMessage?.let { message -> AlertDialog(onDismissRequest = { sleepMessage = null }, title = { Text("Can't start sleep") }, text = { Text(message) }, confirmButton = { TextButton(onClick = { sleepMessage = null }) { Text("OK") } }) }
     if (confirmLongSleep) AlertDialog(onDismissRequest = { confirmLongSleep = false }, title = { Text("Check your sleep time") }, text = { Text("This sleep session is over 24 hours. Finish it with the recorded times, or cancel and correct it later.") }, confirmButton = { TextButton(onClick = { confirmLongSleep = false; onFinishSleep(true) {} }) { Text("Finish anyway") } }, dismissButton = { TextButton(onClick = { confirmLongSleep = false }) { Text("Cancel") } })
 }

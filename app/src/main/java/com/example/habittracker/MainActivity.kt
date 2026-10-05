@@ -4,15 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.SystemBarStyle
 import androidx.activity.viewModels
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalView
-import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.habittracker.preferences.ThemeMode
 import com.example.habittracker.ui.HabitTrackerApp
@@ -27,7 +23,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 class MainActivity : ComponentActivity() {
     private var activeSessionRequest by mutableIntStateOf(0)
     private val viewModel: HabitViewModel by viewModels { val app = application as HabitTrackerApplication; HabitViewModel.Factory(app.repository, app.prayerRepository, app.themePreferences) }
@@ -37,21 +32,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) { super.onCreate(savedInstanceState); consumeActiveSessionIntent(intent); enableEdgeToEdge(); setContent {
         val mode by viewModel.themeMode.collectAsStateWithLifecycle()
         val dark = when (mode) { ThemeMode.SYSTEM -> isSystemInDarkTheme(); ThemeMode.LIGHT -> false; ThemeMode.DARK -> true }
-        val view = LocalView.current
-        SideEffect {
-            WindowCompat.getInsetsController(window, view).apply {
-                isAppearanceLightStatusBars = !dark
-                isAppearanceLightNavigationBars = !dark
-            }
-        }
         HabitTrackerTheme(darkTheme = dark, dynamicColor = false) {
-            val systemBarColor = androidx.compose.material3.MaterialTheme.colorScheme.background.toArgb()
-            SideEffect {
-                enableEdgeToEdge(
-                    statusBarStyle = if (dark) SystemBarStyle.dark(systemBarColor) else SystemBarStyle.light(systemBarColor, systemBarColor),
-                    navigationBarStyle = if (dark) SystemBarStyle.dark(systemBarColor) else SystemBarStyle.light(systemBarColor, systemBarColor),
-                )
-            }
             val onboarding by onboardingViewModel.state.collectAsStateWithLifecycle()
             when {
                 !onboarding.ready -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }

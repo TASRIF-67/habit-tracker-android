@@ -2,7 +2,7 @@
 
 HabitTracker is a private, local-first Android routine and daily-life tracker with Islamic habits as first-class features. It combines prayer tracking, flexible personal routines, timed activities, sleep planning, history, and local insights in a calm native Android experience.
 
-> Current status: **HabitTracker V2 beta** (`2.0.0-beta.2`)
+> Current status: **HabitTracker V2 beta** (`2.0.0-beta.3`)
 
 ## Highlights
 
